@@ -178,6 +178,15 @@ export default class TopHatPrefs extends ExtensionPreferences {
     choices.append(_('Both meter and value'));
     this.addComboRow(_('Show as'), choices, 'mem-display', group);
 
+    const units = new Gtk.StringList();
+    units.append(_('%'));
+    units.append(_('MB'));
+    units.append(_('GB'));
+    units.append(_('MiB'));
+    units.append(_('GiB'));
+    // dunno whether to add Mbit/Gbit for simplicity's sake
+    this.addComboRow(_('Units for Display'), units, 'mem-units', group);
+
     return page;
   }
 

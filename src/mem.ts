@@ -31,6 +31,8 @@ import {
   DisplayType,
   GBytesToHumanString,
   getDisplayTypeSetting,
+  DisplayUnit,
+  getDisplayUnitsSetting,
 } from './helpers.js';
 import { HistoryChart } from './history.js';
 import { Orientation } from './meter.js';
@@ -110,6 +112,33 @@ export const MemMonitor = GObject.registerClass(
         }
       }
       return this.displayType;
+    }
+
+    private assertDisplayUnits(
+      rs: number,
+      rsf: number,
+      ru: number,
+      u: DisplayUnit
+    ) {
+      let s = '';
+      switch (u) {
+        case DisplayUnit.Percentage:
+          s = `${Math.round(ru * 100)}%`;
+          break;
+        case DisplayUnit.Megabytes:
+          s = `${Math.round(rs / 1024)} MB`;
+          break;
+        case DisplayUnit.Gigabytes:
+          s = `${Math.round(rs / 1024 / 1024)} GB`;
+          break;
+        case DisplayUnit.Mebibytes:
+          s = `${Math.round(rs / 1024 / 1024)} MiB`;
+          break;
+        case DisplayUnit.Gibibytes:
+          s = `${Math.round(rs / 1024 / 1024 / 1024)} GiB`;
+          break;
+      }
+      return s;
     }
 
     private buildMenu() {
@@ -193,7 +222,13 @@ export const MemMonitor = GObject.registerClass(
 
       id = vitals.connect('notify::ram-usage', () => {
         // console.log(`ram-usage: ${vitals.ram_usage}`);
-        const s = (vitals.ram_usage * 100).toFixed(0) + '%';
+        const unit = getDisplayUnitsSetting(this.gsettings, 'mem-display');
+        const s = this.assertDisplayUnits(
+          vitals.ram_usage,
+          vitals.ram_size_free,
+          vitals.ram_usage,
+          unit
+        );
         this.usage.text = s;
         this.menuMemUsage.text = s;
         this.meter.setBarSizes([vitals.ram_usage]);

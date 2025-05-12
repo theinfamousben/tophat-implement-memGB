@@ -23,12 +23,27 @@ export enum DisplayType {
   Both,
 }
 
-const ONE_MB_IN_B = 1000000;
+export enum DisplayUnit {
+  Percentage,
+  Megabytes,
+  Gigabytes,
+  Mebibytes,
+  Gibibytes,
+}
+
+export const ONE_MB_IN_B = 1000000;
 const TEN_MB_IN_B = 10000000;
 export const ONE_GB_IN_B = 1000000000;
 const TEN_GB_IN_B = 10000000000;
 const ONE_TB_IN_B = 1000000000000;
 const TEN_TB_IN_B = 10000000000000;
+
+export const ONE_MIB_IN_B = 1048576;
+const TEN_MIB_IN_B = 10485760;
+export const ONE_GIB_IN_B = 1073741824;
+const TEN_GIB_IN_B = 10737418240;
+const ONE_TIB_IN_B = 1099511627776;
+const TEN_TIB_IN_B = 10995116277760;
 
 const RE_DF_IS_DISK = /^\s*\/dev\/(\S+)(.*)$/;
 const RE_DF_DISK_USAGE = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+%)\s+(.*)$/;
@@ -84,6 +99,44 @@ export function bytesToHumanString(
   }
 }
 
+export function binaryBytesToHumanString(
+  bytes: number,
+  unit: string = 'bytes',
+  imprecise: boolean = false
+): string {
+  let quantity = bytes;
+  let precision = 1;
+  if (imprecise) {
+    precision = 0;
+  }
+  let suffix = 'B';
+  if (unit === 'bits') {
+    quantity *= 8;
+    suffix = 'b';
+  }
+  if (quantity < 1) {
+    return `0 K${suffix}`;
+  } else if (quantity < 1000) {
+    // Indicate activity, but don't clutter the UI w/ # of bytes
+    return `< 1 K${suffix}`;
+  } else if (quantity < ONE_MIB_IN_B) {
+    return `${(quantity / 1000).toFixed(0)} K${suffix}`;
+  } else if (quantity < TEN_MIB_IN_B) {
+    // Show one decimal of precision for < 100 MB
+    return `${(quantity / ONE_MIB_IN_B).toFixed(precision)} Mi${suffix}`;
+  } else if (quantity < ONE_GIB_IN_B) {
+    return `${(quantity / ONE_MIB_IN_B).toFixed(0)} Mi${suffix}`;
+  } else if (quantity < TEN_GIB_IN_B) {
+    return `${(quantity / ONE_GIB_IN_B).toFixed(precision)} Gi${suffix}`;
+  } else if (quantity < ONE_TIB_IN_B) {
+    return `${(quantity / ONE_GIB_IN_B).toFixed(0)} Gi${suffix}`;
+  } else if (quantity < TEN_TIB_IN_B) {
+    return `${(quantity / ONE_TIB_IN_B).toFixed(precision)} Ti${suffix}`;
+  } else {
+    return `${(quantity / ONE_TIB_IN_B).toFixed(0)} Ti${suffix}`;
+  }
+}
+
 /**
  * Round up to the nearest power of 10 (or half that).
  *
@@ -108,6 +161,28 @@ export function getDisplayTypeSetting(settings: Gio.Settings, key: string) {
       break;
     case 'both':
       t = DisplayType.Both;
+      break;
+  }
+  return t;
+}
+
+export function getDisplayUnitsSetting(settings: Gio.Settings, key: string) {
+  let t = DisplayUnit.Percentage;
+  switch (settings.get_string(key)) {
+    case 'percentage':
+      t = DisplayUnit.Percentage;
+      break;
+    case 'megabytes':
+      t = DisplayUnit.Megabytes;
+      break;
+    case 'gigabytes':
+      t = DisplayUnit.Gigabytes;
+      break;
+    case 'mebibytes':
+      t = DisplayUnit.Mebibytes;
+      break;
+    case 'gibibytes':
+      t = DisplayUnit.Gibibytes;
       break;
   }
   return t;
